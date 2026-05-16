@@ -1,0 +1,12 @@
+{
+  "name": "My Public Pages",
+  "short_name": "MyPages",
+  "description": "All public projects — DEV and PROD side by side",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#06080a",
+  "theme_color": "#4ade80",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
