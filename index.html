@@ -2,111 +2,183 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>My Public Pages</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4ade80">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MyPages">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#06080a;--glass:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--green:#4ade80;--text:#e2e8f0;--muted:#64748b}
+/* === Root === */
+:root{
+  --bg:#060a0e;--glass:rgba(255,255,255,0.032);--border:rgba(255,255,255,0.072);
+  --green:#4ade80;--green-dim:#16a34a;--text:#e2e8f0;--muted:#64748b;
+  --yellow:#facc15;--purple:#a78bfa;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:48px 40px;
-  background-image:radial-gradient(ellipse 90% 55% at 50% -5%,rgba(74,222,128,0.14) 0%,transparent 65%),
-    radial-gradient(ellipse 50% 40% at 90% 90%,rgba(22,101,52,0.1) 0%,transparent 60%)}
-.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);background-size:48px 48px}
-.wrap{position:relative;z-index:1;max-width:1440px;margin:0 auto}
 
-/* ── Header ── */
-.page-header{margin-bottom:44px;display:flex;align-items:flex-start;gap:18px}
-.logo{width:54px;height:54px;background:linear-gradient(145deg,#4ade80,#16a34a);border-radius:14px;
-  display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-size:1.6rem;
-  font-weight:900;color:#052e16;box-shadow:0 4px 22px rgba(74,222,128,0.4);flex-shrink:0;letter-spacing:-.02em}
-.page-header h1{font-size:1.65rem;font-weight:700;
-  background:linear-gradient(135deg,#f1f5f9 30%,#4ade80);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.page-header p{font-size:0.82rem;color:var(--muted);margin-top:5px}
-.gh-repo{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:0.7rem;font-weight:600;
-  color:#86efac;text-decoration:none;background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2);
-  border-radius:20px;padding:3px 11px;transition:all .15s}
-.gh-repo:hover{background:rgba(74,222,128,0.14);border-color:rgba(74,222,128,0.4)}
+/* === Scrollbar === */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#070c0f}
+::-webkit-scrollbar-thumb{background:#1a2e1a;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#254525}
+
+/* === Body === */
+body{
+  font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  padding-top:max(48px,env(safe-area-inset-top,0px));
+  padding-left:max(40px,env(safe-area-inset-left,0px));
+  padding-right:max(40px,env(safe-area-inset-right,0px));
+  padding-bottom:max(48px,env(safe-area-inset-bottom,0px));
+  background-image:
+    radial-gradient(ellipse 110% 65% at 50% -8%,rgba(74,222,128,0.2) 0%,transparent 58%),
+    radial-gradient(ellipse 65% 55% at 92% 98%,rgba(22,101,52,0.13) 0%,transparent 52%),
+    radial-gradient(ellipse 45% 45% at 4% 78%,rgba(167,139,250,0.055) 0%,transparent 48%);
+}
+
+/* === Grid overlay === */
+.grid-bg{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.016) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.016) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:radial-gradient(ellipse 85% 75% at 50% 45%,black 30%,transparent 100%);
+}
+
+.wrap{position:relative;z-index:1;max-width:1480px;margin:0 auto}
+
+/* === Header === */
+.page-header{margin-bottom:52px;display:flex;align-items:flex-start;gap:20px}
+.logo{
+  width:60px;height:60px;flex-shrink:0;
+  background:linear-gradient(145deg,#4ade80,#16a34a);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.7rem;font-weight:900;color:#052e16;letter-spacing:-.02em;
+  box-shadow:0 0 0 1px rgba(74,222,128,0.28),0 6px 32px rgba(74,222,128,0.48),0 0 70px rgba(74,222,128,0.16);
+  animation:logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(74,222,128,0.28),0 6px 32px rgba(74,222,128,0.48),0 0 70px rgba(74,222,128,0.16)}
+  50%{box-shadow:0 0 0 1px rgba(74,222,128,0.5),0 8px 44px rgba(74,222,128,0.68),0 0 90px rgba(74,222,128,0.28)}
+}
+.page-header h1{
+  font-size:1.8rem;font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(130deg,#f8fafc 15%,#86efac 55%,#4ade80 85%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.page-header p{font-size:0.78rem;color:var(--muted);margin-top:5px;letter-spacing:.025em}
+.gh-repo{
+  display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+  font-size:0.7rem;font-weight:600;color:#86efac;text-decoration:none;
+  background:rgba(74,222,128,0.055);border:1px solid rgba(74,222,128,0.16);
+  border-radius:20px;padding:4px 13px;transition:all .2s;
+}
+.gh-repo:hover{background:rgba(74,222,128,0.11);border-color:rgba(74,222,128,0.38);color:var(--green)}
 .gh-repo svg{flex-shrink:0}
 
-/* ── Project cards ── */
-.projects{display:flex;flex-direction:column;gap:20px}
-.project-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;
-  backdrop-filter:blur(14px);overflow:hidden;
-  transition:border-color .25s,box-shadow .25s,transform .2s;
-  animation:fadeUp .45s ease both}
-.project-card:hover{border-color:rgba(74,222,128,0.28);box-shadow:0 8px 40px rgba(0,0,0,0.35),0 0 0 1px rgba(74,222,128,0.06)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+/* === Cards === */
+.projects{display:flex;flex-direction:column;gap:14px}
+.project-card{
+  position:relative;background:var(--glass);
+  border:1px solid var(--border);border-radius:18px;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  overflow:hidden;transition:border-color .3s,box-shadow .3s,transform .25s;
+  animation:fadeUp .5s ease both;
+}
+.project-card::after{
+  content:'';position:absolute;inset:0;border-radius:18px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(74,222,128,0.045) 0%,transparent 45%);
+  opacity:0;transition:opacity .35s;
+}
+.project-card:hover{
+  border-color:rgba(74,222,128,0.32);transform:translateY(-1px);
+  box-shadow:0 14px 55px rgba(0,0,0,0.42),0 0 0 1px rgba(74,222,128,0.09),0 0 45px rgba(74,222,128,0.07);
+}
+.project-card:hover::after{opacity:1}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .project-card:nth-child(1){animation-delay:.04s}.project-card:nth-child(2){animation-delay:.09s}
 .project-card:nth-child(3){animation-delay:.14s}.project-card:nth-child(4){animation-delay:.19s}
 .project-card:nth-child(5){animation-delay:.24s}.project-card:nth-child(6){animation-delay:.29s}
 .project-card:nth-child(7){animation-delay:.34s}.project-card:nth-child(8){animation-delay:.39s}
-.project-title{padding:13px 20px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.18)}
-.project-title h2{font-size:0.93rem;font-weight:700;color:#f1f5f9}
-.project-title .badge{font-size:0.62rem;font-weight:700;padding:2px 9px;border-radius:20px;
-  background:rgba(74,222,128,0.07);color:#86efac;border:1px solid rgba(74,222,128,0.18);
-  letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap}
 
-/* ── Thumb grid ── */
-.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.thumbs-3{grid-template-columns:repeat(3,1fr)}
-.thumbs-4{grid-template-columns:repeat(4,1fr)}
-.thumbs-5{grid-template-columns:repeat(5,1fr)}
-.thumbs-6{grid-template-columns:repeat(6,1fr)}
-@media(max-width:900px){.thumbs,.thumbs-3,.thumbs-4,.thumbs-5,.thumbs-6{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.thumbs,.thumbs-3,.thumbs-4,.thumbs-5,.thumbs-6{grid-template-columns:1fr}}
-.thumb-col{padding:16px 18px}
+/* === Card header === */
+.project-title{
+  padding:13px 22px;border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,0.24);display:flex;align-items:center;gap:10px;
+  position:relative;
+}
+.project-title::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(to bottom,rgba(74,222,128,0.7),rgba(74,222,128,0.1));
+  border-radius:0 2px 2px 0;
+}
+.project-title h2{font-size:0.93rem;font-weight:700;color:#f1f5f9;letter-spacing:-.01em}
+
+/* === Thumb grid === */
+.thumbs{display:grid;grid-template-columns:1fr 3fr;gap:0}
+@media(max-width:640px){.thumbs{grid-template-columns:1fr}}
+.thumb-col{padding:14px 18px}
 .thumb-col+.thumb-col{border-left:1px solid var(--border)}
 
-/* ── Thumb labels ── */
-.thumb-label{font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-  margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.thumb-label a{font-size:0.62rem;font-weight:600;color:inherit;opacity:.6;text-decoration:none;
-  margin-left:auto;letter-spacing:0}
-.thumb-label a:hover{opacity:1;text-decoration:underline}
-.thumb-label.dev{color:#facc15}
-.thumb-label.dev::before{content:'';width:7px;height:7px;border-radius:50%;background:#facc15;flex-shrink:0}
-.thumb-label.prod{color:var(--green)}
-.thumb-label.prod::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
-.thumb-label.gh{color:#a78bfa}
-.thumb-label.gh::before{content:'';width:7px;height:7px;border-radius:50%;background:#a78bfa;flex-shrink:0}
-.thumb-label.hist{color:#94a3b8}
-.thumb-label.hist::before{content:'';width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0}
-.thumb-label .gh-tag{color:#c4b5fd;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.28);
-  border-radius:10px;padding:1px 8px;font-size:0.62rem;letter-spacing:0;font-weight:600;text-transform:none}
-.tag-public{color:#34d399;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25);
-  border-radius:10px;padding:1px 7px;font-size:0.6rem;font-weight:700;letter-spacing:.05em}
-.tag-company{color:#60a5fa;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.25);
-  border-radius:10px;padding:1px 7px;font-size:0.6rem;font-weight:700;letter-spacing:.05em}
-
-/* ── Thumbnail frame ── */
-.thumb-wrap{position:relative;width:100%;height:218px;overflow:hidden;border-radius:10px;
-  border:1px solid rgba(255,255,255,0.07);background:#05090a;transition:border-color .2s,box-shadow .2s}
-.thumb-wrap:hover{border-color:rgba(74,222,128,0.4);box-shadow:0 0 0 2px rgba(74,222,128,0.1)}
-.thumb-wrap iframe{position:absolute;top:0;left:0;width:1280px;height:800px;
-  border:none;pointer-events:none;transform-origin:top left}
-.thumb-link{position:absolute;inset:0;z-index:2;display:flex;align-items:flex-end;padding:10px;
-  text-decoration:none;background:linear-gradient(to top,rgba(5,9,10,.9) 0%,transparent 55%);
-  opacity:0;transition:opacity .2s;border-radius:9px}
-.thumb-wrap:hover .thumb-link{opacity:1}
-.thumb-link span{font-size:0.68rem;font-weight:700;color:#e2e8f0;
-  background:rgba(10,18,10,.85);border:1px solid rgba(74,222,128,0.35);border-radius:6px;padding:3px 10px}
-
-/* ── Utilities ── */
-.thumb-ts{font-size:0.57rem;color:#334155;margin-top:6px;text-align:right;letter-spacing:.02em;padding:0 2px}
-.divider{width:2px;background:rgba(74,222,128,0.15) !important}
-.lbl-link{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:.88;transition:opacity .15s}
+/* === Labels === */
+.thumb-label{
+  font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:9px;display:flex;align-items:center;gap:6px;
+}
+.thumb-label.dev{color:var(--yellow)}
+.thumb-label.dev::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--yellow);flex-shrink:0;
+  animation:devDot 2.4s ease-in-out infinite;
+}
+@keyframes devDot{0%,100%{opacity:1;box-shadow:0 0 4px var(--yellow)}50%{opacity:.55;box-shadow:0 0 9px var(--yellow)}}
+.thumb-label.gh{color:var(--purple)}
+.thumb-label.gh::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0}
+.lbl-link{
+  color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+  opacity:.84;transition:opacity .15s;font-size:0.6rem;font-weight:600;
+  letter-spacing:0;text-transform:none;
+}
 .lbl-link:hover{opacity:1;text-decoration:underline}
+
+/* === Thumbnail frame === */
+.thumb-wrap{
+  position:relative;width:100%;overflow:hidden;border-radius:10px;
+  border:1px solid rgba(255,255,255,0.058);background:#040809;
+  transition:border-color .22s,box-shadow .22s;
+  max-height:300px;
+}
+.thumbs>.thumb-col:first-child .thumb-wrap{height:68px;max-height:68px}
+.thumb-wrap:hover{
+  border-color:rgba(74,222,128,0.42);
+  box-shadow:0 0 0 2px rgba(74,222,128,0.1),0 6px 22px rgba(0,0,0,0.38);
+}
+.thumb-wrap iframe{
+  position:absolute;top:0;left:0;width:1280px;height:800px;
+  border:none;pointer-events:none;transform-origin:top left;
+}
+.thumb-link{
+  position:absolute;inset:0;z-index:2;display:flex;align-items:flex-end;padding:8px;
+  text-decoration:none;background:linear-gradient(to top,rgba(4,8,10,.9) 0%,transparent 60%);
+  opacity:0;transition:opacity .2s;border-radius:9px;
+}
+.thumb-wrap:hover .thumb-link{opacity:1}
+.thumb-link span{
+  font-size:0.66rem;font-weight:700;color:#e2e8f0;
+  background:rgba(8,16,10,.9);border:1px solid rgba(74,222,128,0.38);
+  border-radius:6px;padding:3px 10px;letter-spacing:.02em;
+}
+
+/* === Timestamp === */
+.thumb-ts{font-size:0.53rem;color:#253525;margin-top:5px;text-align:right;letter-spacing:.03em;padding:0 2px}
 </style>
 </head>
 <body>
@@ -129,36 +201,30 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
     <!-- HEP Dashboard -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>HEP Dashboard</h2>
-        <span class="badge">Workshop overview &amp; globe</span>
-      </div>
+      <div class="project-title"><h2>HEP Dashboard</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/HEP%20dashboard/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> HEP dashboard</a></div>
           <div class="thumb-wrap">
             <iframe src="https://andreashirche.github.io/hep-workshops/hep-dashboard.html" loading="lazy" title="HEP Dashboard DEV" sandbox="allow-scripts allow-same-origin"></iframe>
-            <a class="thumb-link" href="../hep-dashboard-DEV.html" target="_blank"><span>Open DEV ↗</span></a>
+            <a class="thumb-link" href="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/HEP%20dashboard/hep-dashboard-DEV.html" target="_blank"><span>Open DEV ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a> <span class="tag-company">Company</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a></div>
           <div class="thumb-wrap">
-            <iframe src="https://andreashirche.github.io/hep-workshops/hep-dashboard.html" loading="lazy" title="HEP Dashboard GitHub Pages" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="https://andreashirche.github.io/hep-workshops/hep-dashboard.html" loading="lazy" title="HEP Dashboard GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/hep-dashboard.html" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- HEP AI Palo Alto Agenda -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>HEP AI Palo Alto Agenda</h2>
-        <span class="badge">Mission · Vision · Palo Alto 2026</span>
-      </div>
+      <div class="project-title"><h2>HEP AI Palo Alto Agenda</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/Claude/Public/Agenda_AI_PaloAlto_2026/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> Agenda_AI_PaloAlto_2026</a></div>
@@ -166,77 +232,68 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <iframe src="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/Claude/Public/Agenda_AI_PaloAlto_2026/Wission3.html" loading="lazy" title="Palo Alto DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://sap-my.sharepoint.com/:u:/r/personal/andreas_hirche_sap_com/Documents/Claude/Public/Agenda_AI_PaloAlto_2026/Wission3.html?csf=1&web=1&e=bE4Wdf" target="_blank"><span>Open ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a> <span class="tag-company">Company</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a></div>
           <div class="thumb-wrap">
             <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_AI_PaloAlto_2026/Wission3.html" loading="lazy" title="Palo Alto GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/Agenda_AI_PaloAlto_2026/Wission3.html" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- Bellevue Agenda -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>Agenda – IS Bellevue 2026</h2>
-        <span class="badge">Integration Suite workshop agenda</span>
-      </div>
+      <div class="project-title"><h2>Agenda – IS Bellevue 2026</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/HEP%20dashboard/Agenda_IS_Bellevue_2026/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> Agenda_IS_Bellevue_2026</a></div>
           <div class="thumb-wrap">
-            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" loading="lazy" title="IS Bellevue Agenda" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" loading="lazy" title="Bellevue DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" target="_blank"><span>Open ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a> <span class="tag-company">Company</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/hep-workshops" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / hep-workshops</a></div>
           <div class="thumb-wrap">
-            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" loading="lazy" title="IS Bellevue Agenda GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" loading="lazy" title="Bellevue GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/Agenda_IS_Bellevue_2026/agenda.html" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- Helsinki Agenda -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>Agenda – AI Helsinki 2026</h2>
-        <span class="badge">Custom AI Solutions workshop agenda</span>
-      </div>
+      <div class="project-title"><h2>Agenda – AI Helsinki 2026</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/OneDrive%20-%20SAP%20SE/HEP%20dashboard/Agenda_AI_Helsinki_2026/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> Agenda_AI_Helsinki_2026</a></div>
           <div class="thumb-wrap">
-            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" loading="lazy" title="AI Helsinki Agenda" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" loading="lazy" title="Helsinki DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" target="_blank"><span>Open ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.tools.sap/DCC/dc-hep" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> DCC / dc-hep</a> <span class="tag-company">Company</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.tools.sap/DCC/dc-hep" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> DCC / dc-hep</a></div>
           <div class="thumb-wrap">
-            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" loading="lazy" title="AI Helsinki Agenda GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" loading="lazy" title="Helsinki GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/hep-workshops/Agenda_AI_Helsinki_2026/Agenda_AI_Helsinki_2026.html" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- Brett -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>Brett</h2>
-        <span class="badge">Interactive Video</span>
-      </div>
+      <div class="project-title"><h2>Brett</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="https://sap-my.sharepoint.com/:f:/r/personal/andreas_hirche_sap_com/Documents/Claude/Public/Brett?csf=1&web=1&e=ebEqvL" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> Brett</a></div>
@@ -244,49 +301,45 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <iframe src="https://andreashirche.github.io/Brett/" loading="lazy" title="Brett DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://sap-my.sharepoint.com/:f:/r/personal/andreas_hirche_sap_com/Documents/Claude/Public/Brett?csf=1&web=1&e=ebEqvL" target="_blank"><span>Open ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/Brett" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / Brett</a> <span class="tag-public">Public</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/Brett" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / Brett</a></div>
           <div class="thumb-wrap">
             <iframe src="https://andreashirche.github.io/Brett/" loading="lazy" title="Brett GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/Brett/" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- Auto -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>Auto</h2>
-        <span class="badge">Fahrzeugkatalog</span>
-      </div>
+      <div class="project-title"><h2>Auto</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> Auto</a></div>
           <div class="thumb-wrap">
-            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/auto4-DEV.html" loading="lazy" title="Auto v4 DEV" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/auto4-DEV.html" loading="lazy" title="Auto DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/auto4-DEV.html" target="_blank"><span>Open DEV ↗</span></a>
           </div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/Auto" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / Auto</a> <span class="tag-public">Public</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/Auto" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / Auto</a></div>
           <div class="thumb-wrap">
-            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/auto4.html" loading="lazy" title="Auto GitHub Pages" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/Auto/auto4.html" loading="lazy" title="Auto GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/Auto/" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- TKD -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>TKD</h2>
-        <span class="badge">Taekwondo Sparring</span>
-      </div>
+      <div class="project-title"><h2>TKD</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/TKD/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> TKD</a></div>
@@ -294,25 +347,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/TKD/tkd.html" loading="lazy" title="TKD DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/TKD/tkd.html" target="_blank"><span>Open DEV ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/TKD" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / TKD</a> <span class="tag-public">Public</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/TKD" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / TKD</a></div>
           <div class="thumb-wrap">
-            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/TKD/index.html" loading="lazy" title="TKD GitHub Pages" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/TKD/index.html" loading="lazy" title="TKD GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/TKD/" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
-          <div class="thumb-ts">&#8635; 2026-05-16</div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
 
     <!-- SG7123 -->
     <div class="project-card">
-      <div class="project-title">
-        <h2>SG7123 – Pillow Fight!</h2>
-        <span class="badge">Game</span>
-      </div>
+      <div class="project-title"><h2>SG7123 – Pillow Fight!</h2></div>
       <div class="thumbs">
         <div class="thumb-col">
           <div class="thumb-label dev"><a class="lbl-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/SG7123/" target="_blank"><svg width="12" height="10" viewBox="0 0 20 16" fill="currentColor"><path d="M0 2a2 2 0 012-2h4l2 2h10a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V2z"/></svg> SG7123</a></div>
@@ -320,13 +370,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/SG7123/sg7123.html" loading="lazy" title="SG7123 DEV" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/SG7123/sg7123.html" target="_blank"><span>Open DEV ↗</span></a>
           </div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
         <div class="thumb-col">
-          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/SG7123" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / SG7123</a> <span class="tag-public">Public</span></div>
+          <div class="thumb-label gh"><a class="lbl-link" href="https://github.com/AndreasHirche/SG7123" target="_blank"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> AndreasHirche / SG7123</a></div>
           <div class="thumb-wrap">
-            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/SG7123/index.html" loading="lazy" title="SG7123 GitHub Pages" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe src="file:///C:/Users/andreas.hirche@sap.com/Documents/claude-code-course/company-context/SG7123/index.html" loading="lazy" title="SG7123 GitHub" sandbox="allow-scripts allow-same-origin"></iframe>
             <a class="thumb-link" href="https://andreashirche.github.io/SG7123/" target="_blank"><span>Open GitHub ↗</span></a>
           </div>
+          <div class="thumb-ts">↻ 2026-05-17</div>
         </div>
       </div>
     </div>
@@ -335,24 +387,27 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 </div><!-- /wrap -->
 
 <script>
-// Scale iframes to fit their containers
 function scaleIframes() {
-  document.querySelectorAll('.thumb-wrap').forEach(wrap => {
-    const iframe = wrap.querySelector('iframe');
-    if (!iframe) return;
-    const W = 1280, H = 800;
-    const cw = wrap.clientWidth;
-    const scale = cw / W;
-    iframe.style.width  = W + 'px';
-    iframe.style.height = H + 'px';
-    iframe.style.transform = `scale(${scale})`;
-    wrap.style.height = Math.round(H * scale) + 'px';
+  document.querySelectorAll('.thumbs').forEach(thumbs => {
+    const cols = [...thumbs.querySelectorAll(':scope > .thumb-col')];
+    cols.forEach((col, i) => {
+      const wrap = col.querySelector('.thumb-wrap');
+      const iframe = col.querySelector('iframe');
+      if (!wrap || !iframe) return;
+      const W = 1280, H = 800;
+      const scale = wrap.clientWidth / W;
+      iframe.style.width = W + 'px';
+      iframe.style.height = H + 'px';
+      iframe.style.transform = `scale(${scale})`;
+      if (i > 0) {
+        wrap.style.height = Math.min(Math.round(H * scale), 300) + 'px';
+      }
+    });
   });
 }
 scaleIframes();
 window.addEventListener('resize', scaleIframes);
 
-// Register service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
