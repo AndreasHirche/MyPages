@@ -411,7 +411,8 @@ function scaleIframes() {
     });
   });
 }
-scaleIframes();
+requestAnimationFrame(scaleIframes);
+window.addEventListener('load', scaleIframes);
 window.addEventListener('resize', scaleIframes);
 
 if ('serviceWorker' in navigator) {
