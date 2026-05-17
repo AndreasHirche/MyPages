@@ -163,6 +163,7 @@ body{
   max-height:300px;
 }
 .thumbs>.thumb-col:first-child .thumb-wrap{height:68px;max-height:68px}
+.thumbs>.thumb-col:not(:first-child) .thumb-wrap{aspect-ratio:1280/800;max-height:300px}
 .thumb-wrap:hover{
   border-color:rgba(74,222,128,0.42);
   box-shadow:0 0 0 2px rgba(74,222,128,0.1),0 6px 22px rgba(0,0,0,0.38);
@@ -405,9 +406,6 @@ function scaleIframes() {
       iframe.style.width = W + 'px';
       iframe.style.height = H + 'px';
       iframe.style.transform = `scale(${scale})`;
-      if (i > 0) {
-        wrap.style.height = Math.min(Math.round(H * scale), 300) + 'px';
-      }
     });
   });
 }
