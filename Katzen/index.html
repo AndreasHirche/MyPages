@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#f5e6c8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Katzen Chaos">
+<title>🐱 Katzen Chaos</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a0d00;touch-action:none}
+#wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%}
+canvas{display:block;max-width:100%;max-height:100%}
+#dpad{
+  position:fixed;bottom:0;left:0;right:0;
+  display:none;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding:8px 16px 10px;
+  pointer-events:none;
+  z-index:10;
+}
+.ctrl-group{display:flex;gap:6px;pointer-events:all}
+.cbtn{
+  width:58px;height:58px;
+  border-radius:50%;
+  border:none;
+  font-size:1.5rem;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.18);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  border:2px solid rgba(255,255,255,0.3);
+  color:#fff;
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .1s;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+.cbtn:active,.cbtn.pressed{background:rgba(255,255,255,0.38)}
+#rotateMsg{
+  display:none;
+  position:fixed;inset:0;
+  background:#1a0d00;
+  color:#fff;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;
+  font-size:1.2rem;
+  font-family:sans-serif;
+  z-index:999;
+}
+@media(orientation:portrait) and (max-width:600px){
+  #rotateMsg{display:flex}
+}
+</style>
+</head>
+<body>
+<div id="rotateMsg">
+  <div style="font-size:3rem">📱↔️</div>
+  <div>Bitte Handy drehen</div>
+</div>
+
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<div id="dpad">
+  <div class="ctrl-group">
+    <button class="cbtn" id="btnL">◀</button>
+    <button class="cbtn" id="btnR">▶</button>
+  </div>
+  <div class="ctrl-group" style="flex-direction:column;align-items:center;gap:6px">
+    <button class="cbtn" id="btnU">▲</button>
+    <button class="cbtn" id="btnD">▼</button>
+  </div>
+</div>
+
+<script>
+// ─── Canvas setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 450;
+
+function resize() {
+  const scaleX = window.innerWidth / W;
+  const scaleY = window.innerHeight / H;
+  const scale = Math.min(scaleX, scaleY);
+  canvas.width = W; canvas.height = H;
+  canvas.style.width  = Math.floor(W * scale) + 'px';
+  canvas.style.height = Math.floor(H * scale) + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const FLOOR_Y    = 388;
+const GRAVITY    = 900;
+const JUMP_V     = -440;
+const PLAYER_SPD = 200;
+// Level time: level * 60s (set in startLevel)
+
+const SHELF_Y  = 222;   // surface of bookshelf (feet of entity standing on it)
+const BRANCH_Y = 198;   // tree branch surface
+
+const PLATFORMS = [
+  { x: 558, y: SHELF_Y,  w: 128, h: 12 },   // bookshelf top
+  { x:  28, y: BRANCH_Y, w:  88, h: 12 },   // tree branch
+];
+
+// Trouble spot definitions
+const SPOTS = [
+  { id:'poop',    label:'💩 Pfütze!',    x:340, y:FLOOR_Y,  high:false, warnTime:2.5, dmg:20 },
+  { id:'vase',    label:'🏺 Vase!',      x:622, y:SHELF_Y,  high:true,  warnTime:2.0, dmg:25 },
+  { id:'scratch', label:'🛋 Gekratzt!',  x:420, y:FLOOR_Y,  high:false, warnTime:2.2, dmg:15 },
+  { id:'mouse',   label:'🐭 Maus!',      x:762, y:FLOOR_Y,  high:false, warnTime:1.6, dmg:20 },
+];
+
+const CAT_COLORS = ['#e07b39','#9b6b9e','#4a9e6b','#e04f4f','#3a7bc8','#c49a1e'];
+const CAT_NAMES  = ['Mimi','Leo','Bella','Tiger','Luna','Oscar'];
+
+// ─── Game state ──────────────────────────────────────────────────────────────
+let screen, level, score, timeLeft, cats, player, troubles, particles, popups;
+
+const SCREENS = { MENU:0, PLAY:1, LEVEL_WIN:2, GAME_OVER:3 };
+
+function initGame() {
+  screen = SCREENS.MENU;
+  level = 1;
+  score = 100;
+}
+
+function startLevel() {
+  screen = SCREENS.PLAY;
+  timeLeft = level * 60;  // Level 1=1min, Level 2=2min, …
+  troubles = [];
+  particles = [];
+  popups = [];
+
+  // Player
+  player = {
+    x: 380, y: FLOOR_Y,
+    vx: 0,  vy: 0,
+    w: 28,  h: 62,
+    onGround: true,
+    facingRight: true,
+    holdingCat: null,
+    frame: 0, frameTimer: 0,
+    justJumped: false,
+  };
+
+  // Spawn cats
+  cats = [];
+  for (let i = 0; i < level; i++) {
+    cats.push(makeCat(i));
+  }
+}
+
+function makeCat(i) {
+  return {
+    id: i,
+    name: CAT_NAMES[i % CAT_NAMES.length],
+    color: CAT_COLORS[i % CAT_COLORS.length],
+    x: 162 + (i % 3) * 10,
+    y: FLOOR_Y,
+    vx: 0, vy: 0,
+    state: 'sleeping',   // sleeping | walking | warning | trouble | held
+    spot: null,
+    sleepTimer: 3 + i * 1.5 + Math.random() * 3,
+    warnTimer: 0,
+    troubleTimer: 0,
+    walkSpeed: 70 + level * 8,
+    onGround: true,
+    frame: 0, frameTimer: 0,
+    facingRight: true,
+    tailWag: 0,
+  };
+}
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if ((e.code === 'ArrowDown' || e.code === 'KeyS') && screen === SCREENS.PLAY) tryPickupOrDrop();
+  if ((e.code === 'ArrowUp'   || e.code === 'KeyW') && screen === SCREENS.PLAY) tryJump();
+  if (e.code === 'Space' || e.code === 'Enter') handleAction();
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+function handleAction() {
+  ensureAudio();
+  if (screen === SCREENS.MENU)           { score = 100; startLevel(); }
+  else if (screen === SCREENS.LEVEL_WIN) { score = Math.min(score + 20, 100); startLevel(); }
+  else if (screen === SCREENS.GAME_OVER) { level = 1; score = 100; startLevel(); }
+}
+
+function tryJump() {
+  if (!player.onGround) return;
+  player.vy = JUMP_V;
+  player.onGround = false;
+  spawnParticles(player.x, player.y + player.h/2, '#fff', 3);
+}
+
+function tryPickupOrDrop() {
+  if (player.holdingCat) {
+    // Drop into basket?
+    const bx = 162, by = FLOOR_Y;
+    if (Math.abs(player.x - bx) < 55 && Math.abs(player.y - by) < 40) {
+      depositCat(player.holdingCat);
+    } else {
+      // Not near basket → cat wanders immediately (no sleeping outside basket!)
+      let cat = player.holdingCat;
+      cat.x = player.x; cat.y = Math.max(player.y, FLOOR_Y);
+      cat.vy = 0; cat.onGround = true;
+      cat.spot = null;
+      player.holdingCat = null;
+      sndMeow();
+      chooseTrouble(cat);
+    }
+    return;
+  }
+  // Pick up nearby cat
+  let best = null, bestDist = 52;
+  for (const cat of cats) {
+    if (cat.state === 'held') continue;
+    const dx = player.x - cat.x, dy = player.y - cat.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < bestDist) { bestDist = d; best = cat; }
+  }
+  if (best) pickupCat(best);
+}
+
+function pickupCat(cat) {
+  if (cat.state === 'warning') {
+    // Cancel trouble
+    troubles = troubles.filter(t => t.cat !== cat);
+    spawnPopup(cat.x, cat.y - 40, '✅ Gerettet!', '#4ade80');
+  }
+  if (cat.state === 'trouble') {
+    troubles = troubles.filter(t => t.cat !== cat);
+  }
+  cat.state = 'held';
+  cat.spot = null;
+  player.holdingCat = cat;
+  spawnParticles(cat.x, cat.y, cat.color, 5);
+  sndPickup();
+}
+
+function depositCat(cat) {
+  cat.x = 162 + (cat.id % 3) * 8;
+  cat.y = FLOOR_Y;
+  cat.state = 'sleeping';
+  cat.sleepTimer = 5 + Math.random() * (8 - level);
+  cat.spot = null;
+  player.holdingCat = null;
+  spawnParticles(162, FLOOR_Y, '#fbbf24', 8);
+  spawnPopup(162, FLOOR_Y - 50, '🧺 Braves Kätzchen!', '#fbbf24');
+  sndDeposit();
+}
+
+// ─── Touch controls ───────────────────────────────────────────────────────────
+const dpad = document.getElementById('dpad');
+function isTouchDevice() { return window.matchMedia('(pointer:coarse)').matches; }
+if (isTouchDevice()) dpad.style.display = 'flex';
+window.addEventListener('resize', () => { if(isTouchDevice()) dpad.style.display='flex'; });
+
+function addBtn(id, code, action) {
+  const btn = document.getElementById(id);
+  const press   = e => { e.preventDefault(); keys[code] = true;  btn.classList.add('pressed'); if(action) action(); };
+  const release = e => { e.preventDefault(); keys[code] = false; btn.classList.remove('pressed'); };
+  btn.addEventListener('touchstart',  press,   {passive:false});
+  btn.addEventListener('touchend',    release, {passive:false});
+  btn.addEventListener('touchcancel', release, {passive:false});
+  btn.addEventListener('mousedown',   press);
+  btn.addEventListener('mouseup',     release);
+}
+addBtn('btnL', 'ArrowLeft');
+addBtn('btnR', 'ArrowRight');
+addBtn('btnU', 'ArrowUp',   () => { if(screen===SCREENS.PLAY) tryJump(); });
+addBtn('btnD', 'ArrowDown', () => { if(screen===SCREENS.PLAY) tryPickupOrDrop(); });
+
+// ─── Particles & Popups ───────────────────────────────────────────────────────
+function spawnParticles(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 60 + Math.random() * 120;
+    particles.push({ x, y, vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 80,
+      life: 0.6 + Math.random()*0.3, maxLife: 0.9, color, r: 3+Math.random()*3 });
+  }
+}
+
+function spawnPopup(x, y, text, color) {
+  popups.push({ x, y, text, color, life: 1.8, vy: -40 });
+}
+
+// ─── Physics helpers ─────────────────────────────────────────────────────────
+function applyGravity(obj, dt) {
+  obj.vy += GRAVITY * dt;
+  obj.y  += obj.vy * dt;
+  obj.x  += (obj.vx || 0) * dt;
+  obj.onGround = false;
+  // floor
+  if (obj.y >= FLOOR_Y) { obj.y = FLOOR_Y; obj.vy = 0; obj.onGround = true; }
+  // platforms
+  for (const p of PLATFORMS) {
+    if (obj.vy >= 0 &&
+        obj.y <= p.y + 6 && obj.y >= p.y - 20 &&
+        obj.x >= p.x - 10 && obj.x <= p.x + p.w + 10) {
+      obj.y = p.y; obj.vy = 0; obj.onGround = true;
+    }
+  }
+  // left/right walls
+  if (obj.x < 10) obj.x = 10;
+  if (obj.x > W - 10) obj.x = W - 10;
+}
+
+// ─── Update ──────────────────────────────────────────────────────────────────
+let lastTime = 0;
+function update(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  if (screen !== SCREENS.PLAY) { requestAnimationFrame(update); draw(); return; }
+
+  timeLeft -= dt;
+  if (timeLeft <= 0) {
+    // Level complete
+    sndLevelUp();
+    level++;
+    screen = SCREENS.LEVEL_WIN;
+    requestAnimationFrame(update);
+    draw();
+    return;
+  }
+
+  // ── Player movement ──
+  if (keys['ArrowLeft']  || keys['KeyA']) { player.vx = -PLAYER_SPD; player.facingRight = false; }
+  else if (keys['ArrowRight'] || keys['KeyD']) { player.vx =  PLAYER_SPD; player.facingRight = true; }
+  else player.vx = 0;
+
+  applyGravity(player, dt);
+
+  // Walk animation
+  if (player.vx !== 0 && player.onGround) {
+    player.frameTimer += dt;
+    if (player.frameTimer > 0.12) { player.frame = (player.frame + 1) % 4; player.frameTimer = 0; }
+  } else if (player.vx === 0) { player.frame = 0; }
+
+  // ── Held cat follows player ──
+  if (player.holdingCat) {
+    const cat = player.holdingCat;
+    cat.x = player.x + (player.facingRight ? 12 : -12);
+    cat.y = player.y - player.h * 0.45;
+    cat.facingRight = player.facingRight;
+  }
+
+  // ── Cats AI ──
+  for (const cat of cats) {
+    if (cat.state === 'held') continue;
+    cat.tailWag += dt * 3;
+    cat.frameTimer += dt;
+    if (cat.frameTimer > 0.18) { cat.frame = (cat.frame+1)%2; cat.frameTimer = 0; }
+
+    if (cat.state === 'sleeping') {
+      cat.sleepTimer -= dt;
+      if (cat.sleepTimer <= 0) chooseTrouble(cat);
+
+    } else if (cat.state === 'walking') {
+      const target = cat.spot;
+      const dx = target.x - cat.x;
+      if (Math.abs(dx) > 4) {
+        cat.vx = Math.sign(dx) * cat.walkSpeed;
+        cat.facingRight = dx > 0;
+      } else {
+        cat.vx = 0; cat.x = target.x;
+        // Arrived
+        if (target.high && cat.onGround) {
+          // Jump to reach high spot
+          cat.vy = JUMP_V * 0.9;
+          cat.onGround = false;
+        } else if (!target.high || !cat.onGround) {
+          if (Math.abs(cat.y - target.y) < 30) {
+            cat.state = 'warning';
+            cat.warnTimer = target.warnTime * (0.8 + Math.random()*0.4) * Math.max(0.5, 1 - level*0.06);
+            troubles.push({ cat, spot: target, timer: cat.warnTimer, maxTimer: cat.warnTimer });
+            sndMeow();
+          }
+        }
+      }
+      applyGravity(cat, dt);
+
+    } else if (cat.state === 'warning') {
+      cat.warnTimer -= dt;
+      const t = troubles.find(t => t.cat === cat);
+      if (t) t.timer = cat.warnTimer;
+      if (cat.warnTimer <= 0) {
+        triggerTrouble(cat);
+      }
+
+    } else if (cat.state === 'trouble') {
+      cat.troubleTimer -= dt;
+      if (cat.troubleTimer <= 0) {
+        // Cat wanders off to next mischief (never sleeps outside basket)
+        troubles = troubles.filter(t => t.cat !== cat);
+        cat.spot = null;
+        chooseTrouble(cat);
+      }
+    }
+  }
+
+  // ── Particles ──
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vy += 200 * dt;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // ── Popups ──
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const p = popups[i];
+    p.y += p.vy * dt;
+    p.life -= dt;
+    if (p.life <= 0) popups.splice(i, 1);
+  }
+
+  if (score <= 0) {
+    score = 0;
+    sndGameOver();
+    screen = SCREENS.GAME_OVER;
+  }
+
+  requestAnimationFrame(update);
+  draw();
+}
+
+function chooseTrouble(cat) {
+  // Pick a spot not currently targeted by another cat
+  const used = new Set(cats.filter(c => c.spot).map(c => c.spot?.id));
+  const available = SPOTS.filter(s => !used.has(s.id));
+  if (!available.length) {
+    // All spots busy – wander near basket for a bit then retry
+    cat.state = 'sleeping';
+    cat.sleepTimer = 1.5 + Math.random();
+    return;
+  }
+  // In early levels, avoid high spots for first few cats
+  let pool = available;
+  if (level < 3) pool = available.filter(s => !s.high);
+  if (!pool.length) pool = available;
+
+  const spot = pool[Math.floor(Math.random() * pool.length)];
+  cat.spot = spot;
+  cat.state = 'walking';
+}
+
+function triggerTrouble(cat) {
+  const spot = cat.spot;
+  cat.state = 'trouble';
+  cat.troubleTimer = 6 + Math.random() * 4;
+  troubles = troubles.filter(t => t.cat !== cat);
+  score -= spot.dmg;
+  if (score < 0) score = 0;
+  spawnPopup(cat.x, cat.y - 50, spot.label, '#f87171');
+  spawnParticles(cat.x, cat.y, '#ff6b6b', 10);
+  sndTrouble();
+}
+
+// ─── Drawing ─────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  if (screen === SCREENS.MENU)      { drawMenu(); return; }
+  if (screen === SCREENS.LEVEL_WIN) { drawLevelWin(); return; }
+  if (screen === SCREENS.GAME_OVER) { drawGameOver(); return; }
+
+  drawRoom();
+  drawFurniture();
+  drawPlatforms();
+  drawTroubleWarnings();
+  drawBasket();
+
+  // Draw cats (back ones first)
+  for (const cat of cats) {
+    if (cat.state !== 'held') drawCat(cat);
+  }
+  drawPlayer();
+  // Held cat on top
+  if (player.holdingCat) drawCat(player.holdingCat);
+
+  drawParticles();
+  drawPopups();
+  drawHUD();
+}
+
+// ── Room background ──
+function drawRoom() {
+  // Wall
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, FLOOR_Y);
+  wallGrad.addColorStop(0, '#f9edd8');
+  wallGrad.addColorStop(1, '#f2e0c0');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 0, W, FLOOR_Y);
+
+  // Floor boards
+  const floorGrad = ctx.createLinearGradient(0, FLOOR_Y, 0, H);
+  floorGrad.addColorStop(0, '#c8935a');
+  floorGrad.addColorStop(1, '#a87040');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, FLOOR_Y, W, H - FLOOR_Y);
+  ctx.fillStyle = '#a06030';
+  for (let x = 0; x < W; x += 80) {
+    ctx.fillRect(x, FLOOR_Y, 1, H - FLOOR_Y);
+  }
+  ctx.fillStyle = '#b07840';
+  ctx.fillRect(0, FLOOR_Y, W, 3);
+
+  // Window
+  ctx.fillStyle = '#dbeafe';
+  ctx.fillRect(220, 60, 150, 120);
+  ctx.fillStyle = '#bfdbfe';
+  ctx.fillRect(220, 60, 150, 120);
+  // Window shine
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillRect(225, 65, 30, 110);
+  // Window frame
+  ctx.strokeStyle = '#8b6a3e'; ctx.lineWidth = 6;
+  ctx.strokeRect(220, 60, 150, 120);
+  ctx.strokeStyle = '#8b6a3e'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(295, 60); ctx.lineTo(295, 180); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(220, 120); ctx.lineTo(370, 120); ctx.stroke();
+  // Curtains
+  ctx.fillStyle = '#e879a0';
+  ctx.fillRect(210, 50, 18, 140);
+  ctx.fillRect(362, 50, 18, 140);
+
+  // Baseboard
+  ctx.fillStyle = '#9b7a50';
+  ctx.fillRect(0, FLOOR_Y - 8, W, 8);
+}
+
+// ── Furniture ──
+function drawFurniture() {
+  // ── Tree (left) ──
+  // trunk
+  ctx.fillStyle = '#7a5230';
+  ctx.fillRect(60, 200, 24, FLOOR_Y - 200);
+  // branches
+  ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(72, 240); ctx.lineTo(30, 210); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(72, 280); ctx.lineTo(110, 260); ctx.stroke();
+  // leaves
+  for (const [cx, cy, r, col] of [
+    [68, 168, 48, '#5cb85c'], [42, 190, 30, '#4cae4c'], [96, 182, 32, '#3d9a3d'],
+    [60, 145, 35, '#6dcc6d'], [82, 160, 26, '#55bb55']
+  ]) {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  }
+  // Tree branch platform visual
+  ctx.fillStyle = '#8b6a3e';
+  ctx.fillRect(PLATFORMS[1].x, PLATFORMS[1].y, PLATFORMS[1].w, PLATFORMS[1].h);
+
+  // ── Couch (center) ──
+  const cx = 295, cy = 290, cw = 230, ch = 90;
+  ctx.fillStyle = '#c0805a';
+  // Back
+  ctx.beginPath();
+  roundRect(cx, cy, cw, ch * 0.55, 10);
+  ctx.fill();
+  // Seat
+  ctx.fillStyle = '#d4956e';
+  ctx.beginPath();
+  roundRect(cx, cy + ch * 0.5, cw, ch * 0.42, [0,0,10,10]);
+  ctx.fill();
+  // Armrests
+  ctx.fillStyle = '#b87050';
+  ctx.beginPath(); roundRect(cx - 12, cy + ch * 0.35, 22, ch * 0.58, 8); ctx.fill();
+  ctx.beginPath(); roundRect(cx + cw - 10, cy + ch * 0.35, 22, ch * 0.58, 8); ctx.fill();
+  // Cushions
+  ctx.fillStyle = '#e8a87c';
+  ctx.beginPath(); roundRect(cx + 12, cy + ch * 0.52, 96, 30, 8); ctx.fill();
+  ctx.beginPath(); roundRect(cx + 118, cy + ch * 0.52, 96, 30, 8); ctx.fill();
+
+  // ── Bookshelf / Schrank (right) ──
+  const sx = 555, sy = 140, sw = 138, sh = FLOOR_Y - 140;
+  ctx.fillStyle = '#a0703a';
+  ctx.beginPath(); roundRect(sx, sy, sw, sh, 4); ctx.fill();
+  ctx.fillStyle = '#8a5e2a';
+  // Shelves
+  for (const yy of [195, 265, 335]) {
+    ctx.fillRect(sx + 4, yy, sw - 8, 8);
+  }
+  // Books
+  const bookColors = ['#e05050','#3a7bc8','#50c050','#c0a020','#9060c0','#e08040'];
+  let bx = sx + 8;
+  for (const [bw, col] of [[14,'#e05050'],[11,'#3a7bc8'],[16,'#50c050'],[10,'#c0a020'],[13,'#9060c0'],[12,'#e08040']]) {
+    ctx.fillStyle = col;
+    ctx.fillRect(bx, 205, bw, 55);
+    bx += bw + 2;
+  }
+  // Vase on shelf
+  drawVase(622, 185, false);
+
+  // ── Mouse hole (far right) ──
+  ctx.fillStyle = '#7a5230';
+  ctx.beginPath();
+  ctx.arc(758, FLOOR_Y - 1, 18, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#3a2010';
+  ctx.beginPath();
+  ctx.arc(758, FLOOR_Y - 1, 14, Math.PI, 0);
+  ctx.fill();
+}
+
+function drawVase(x, y, broken) {
+  if (broken) {
+    ctx.fillStyle = '#88aadd';
+    // shards
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      ctx.fillRect(x + Math.cos(a)*8 - 4, y + Math.sin(a)*6 - 4, 8, 6);
+    }
+    return;
+  }
+  ctx.fillStyle = '#5080c0';
+  // vase body
+  ctx.beginPath();
+  ctx.moveTo(x - 10, y + 20);
+  ctx.bezierCurveTo(x - 14, y + 10, x - 12, y, x - 5, y - 5);
+  ctx.lineTo(x + 5, y - 5);
+  ctx.bezierCurveTo(x + 12, y, x + 14, y + 10, x + 10, y + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#6090d0';
+  ctx.fillRect(x - 7, y - 5, 14, 4);
+  // flower on vase
+  ctx.fillStyle = '#ffcc00';
+  ctx.beginPath(); ctx.arc(x, y + 6, 4, 0, Math.PI*2); ctx.fill();
+}
+
+function drawPlatforms() {
+  // shelf top visual already in drawFurniture
+}
+
+function drawBasket() {
+  const bx = 162, by = FLOOR_Y;
+  // Basket
+  ctx.fillStyle = '#c8963c';
+  ctx.beginPath();
+  ctx.ellipse(bx, by + 2, 38, 20, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#e0b060';
+  ctx.beginPath();
+  ctx.ellipse(bx, by - 14, 38, 12, 0, Math.PI, Math.PI*2);
+  ctx.fill();
+  // Weave lines
+  ctx.strokeStyle = '#a07030'; ctx.lineWidth = 1.5;
+  for (let i = -3; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(bx + i*10, by - 22);
+    ctx.lineTo(bx + i*10 + 4, by + 4);
+    ctx.stroke();
+  }
+  // Label
+  ctx.fillStyle = '#5a3a10';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🧺', bx, by - 26);
+}
+
+function drawTroubleWarnings() {
+  for (const t of troubles) {
+    const cat = t.cat;
+    const prog = 1 - t.timer / t.maxTimer;
+    const bx = cat.x, by = cat.y - 55;
+    // Warning bubble
+    ctx.fillStyle = 'rgba(255,240,200,0.92)';
+    roundRect(bx - 28, by - 18, 56, 22, 6);
+    ctx.fill();
+    ctx.strokeStyle = prog > 0.7 ? '#ef4444' : '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Progress bar
+    ctx.fillStyle = prog > 0.7 ? '#ef4444' : '#fbbf24';
+    ctx.fillRect(bx - 24, by - 14, 48 * prog, 7);
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
+    ctx.strokeRect(bx - 24, by - 14, 48, 7);
+    // Icon above
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.spot.id === 'poop' ? '💩' : t.spot.id === 'vase' ? '🏺' : t.spot.id === 'scratch' ? '😾' : '🐭', bx, by - 22);
+  }
+}
+
+// ── Cat drawing ──
+function drawCat(cat) {
+  const x = Math.round(cat.x), y = Math.round(cat.y);
+  const dir = cat.facingRight ? 1 : -1;
+  const col = cat.color;
+  const isDark = cat.state === 'trouble';
+  const drawCol = isDark ? darkenColor(col) : col;
+
+  ctx.save();
+  ctx.translate(x, y);
+  if (!cat.facingRight) ctx.scale(-1, 1);
+
+  const tailAngle = cat.state === 'sleeping'
+    ? -0.4
+    : cat.state === 'warning'
+      ? Math.sin(Date.now()*0.01) * 0.5 + 0.8
+      : Math.sin(cat.tailWag) * 0.4 + 0.1;
+
+  if (cat.state === 'sleeping') {
+    // Curled up ball
+    ctx.fillStyle = drawCol;
+    ctx.beginPath(); ctx.ellipse(0, -8, 16, 12, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-4, -12, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = darkenColor(col);
+    ctx.beginPath(); ctx.arc(-4, -12, 3, 0, Math.PI*2); ctx.fill();
+    // Z's
+    ctx.fillStyle = 'rgba(100,100,100,0.6)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('z', 14, -20);
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('z', 20, -28);
+  } else {
+    // Walking/standing cat
+    // Body
+    ctx.fillStyle = drawCol;
+    ctx.beginPath(); ctx.ellipse(0, -14, 13, 9, 0, 0, Math.PI*2); ctx.fill();
+    // Head
+    ctx.beginPath(); ctx.arc(13, -22, 10, 0, Math.PI*2); ctx.fill();
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(8, -30); ctx.lineTo(12, -36); ctx.lineTo(17, -30);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(18, -30); ctx.lineTo(22, -36); ctx.lineTo(26, -30);
+    ctx.fill();
+    // Inner ears
+    ctx.fillStyle = '#ffaaaa';
+    ctx.beginPath(); ctx.moveTo(10, -30); ctx.lineTo(13, -34); ctx.lineTo(16, -30); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(20, -30); ctx.lineTo(23, -34); ctx.lineTo(25, -30); ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(11, -24, 3, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(18, -24, 3, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = cat.state === 'warning' ? '#ff3300' : '#222';
+    ctx.beginPath(); ctx.arc(12, -24, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(19, -24, 2, 0, Math.PI*2); ctx.fill();
+    // Nose
+    ctx.fillStyle = '#ff9999';
+    ctx.beginPath(); ctx.arc(15, -21, 2, 0, Math.PI*2); ctx.fill();
+    // Whiskers
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.8;
+    for (const [ax, ay, bxw, byw] of [[7,-21,0,-21],[7,-22,0,-23],[21,-21,28,-21],[21,-22,28,-23]]) {
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bxw,byw); ctx.stroke();
+    }
+    // Legs (animated)
+    const legOff = cat.state === 'walking' ? Math.sin(cat.tailWag * 2.5) * 5 : 0;
+    ctx.fillStyle = drawCol;
+    ctx.fillRect(-10, -8 + legOff, 7, 10);
+    ctx.fillRect(-2, -8 - legOff, 7, 10);
+    ctx.fillRect(4, -8 + legOff, 7, 10);
+    // Tail
+    ctx.strokeStyle = drawCol; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10, -14);
+    ctx.quadraticCurveTo(-22 - tailAngle*10, -20, -20 - tailAngle*8, -32);
+    ctx.stroke();
+
+    // Trouble state annotation
+    if (cat.state === 'trouble') {
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('😈', 14, -40);
+    }
+  }
+
+  ctx.restore();
+}
+
+// ── Alissa drawing ──
+function drawPlayer() {
+  const x = Math.round(player.x), y = Math.round(player.y);
+  const dir = player.facingRight ? 1 : -1;
+  const f = player.frame;
+  const jumping = !player.onGround;
+
+  ctx.save();
+  ctx.translate(x, y);
+  if (!player.facingRight) ctx.scale(-1, 1);
+
+  // Legs animation
+  const legSwing = jumping ? 10 : Math.sin(f / 4 * Math.PI * 2) * 12;
+
+  // Back leg
+  ctx.fillStyle = '#3a5fa0';
+  ctx.save(); ctx.rotate((-legSwing - 5) * Math.PI / 180);
+  ctx.fillRect(-7, -player.h*0.45, 10, 26);
+  ctx.restore();
+  // Front leg
+  ctx.fillStyle = '#4a6fba';
+  ctx.save(); ctx.rotate((legSwing + 5) * Math.PI / 180);
+  ctx.fillRect(-3, -player.h*0.45, 10, 26);
+  ctx.restore();
+  // Shoes
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath(); roundRect(-13, -player.h*0.45 + 22, 14, 8, 4); ctx.fill();
+  ctx.beginPath(); roundRect(1, -player.h*0.45 + 22, 14, 8, 4); ctx.fill();
+
+  // Body
+  const bodyY = -player.h * 0.9;
+  ctx.fillStyle = '#e85d9a';  // pink shirt
+  ctx.beginPath(); roundRect(-13, bodyY, 26, 30, 6); ctx.fill();
+  // Shirt detail
+  ctx.fillStyle = '#c0407a';
+  ctx.fillRect(-13, bodyY + 14, 26, 3);
+
+  // Arms
+  const armSwing = jumping ? -20 : Math.sin(f / 4 * Math.PI * 2 + Math.PI) * 18;
+  ctx.fillStyle = '#f5c5a0';
+  // Back arm
+  ctx.save(); ctx.translate(-13, bodyY + 6); ctx.rotate((-armSwing) * Math.PI / 180);
+  ctx.fillRect(-6, 0, 8, 20); ctx.restore();
+  // Front arm (holding cat?)
+  ctx.save(); ctx.translate(13, bodyY + 6); ctx.rotate((armSwing) * Math.PI / 180);
+  ctx.fillStyle = player.holdingCat ? '#f5a070' : '#f5c5a0';
+  ctx.fillRect(-2, 0, 8, player.holdingCat ? 14 : 20); ctx.restore();
+
+  // Neck
+  ctx.fillStyle = '#f5c5a0';
+  ctx.fillRect(-5, bodyY - 8, 10, 10);
+
+  // Head
+  ctx.fillStyle = '#f5c5a0';
+  ctx.beginPath(); ctx.ellipse(0, bodyY - 18, 14, 16, 0, 0, Math.PI*2); ctx.fill();
+
+  // Hair (medium-length brown) - Alissa
+  ctx.fillStyle = '#6b3a18';
+  // Top of hair
+  ctx.beginPath(); ctx.ellipse(0, bodyY - 28, 15, 10, 0, Math.PI, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(2, bodyY - 28, 13, 10, 0.2, Math.PI, Math.PI*2); ctx.fill();
+  // Side hair (medium length to shoulder)
+  ctx.beginPath();
+  ctx.moveTo(-14, bodyY - 24);
+  ctx.bezierCurveTo(-20, bodyY - 18, -18, bodyY - 4, -14, bodyY + 2);
+  ctx.lineTo(-10, bodyY + 2);
+  ctx.bezierCurveTo(-14, bodyY - 4, -14, bodyY - 14, -12, bodyY - 22);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(14, bodyY - 24);
+  ctx.bezierCurveTo(20, bodyY - 18, 18, bodyY - 4, 14, bodyY + 2);
+  ctx.lineTo(10, bodyY + 2);
+  ctx.bezierCurveTo(14, bodyY - 4, 14, bodyY - 14, 12, bodyY - 22);
+  ctx.fill();
+  // Hair highlight
+  ctx.fillStyle = '#8b5a28';
+  ctx.beginPath(); ctx.ellipse(3, bodyY - 30, 6, 5, -0.3, Math.PI, Math.PI*2); ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(-4, bodyY - 20, 4, 4, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5, bodyY - 20, 4, 4, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#4a3010';
+  ctx.beginPath(); ctx.arc(-3, bodyY - 20, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6, bodyY - 20, 2.5, 0, Math.PI*2); ctx.fill();
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-2, bodyY - 22, 1, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(7, bodyY - 22, 1, 0, Math.PI*2); ctx.fill();
+
+  // Smile / expression
+  ctx.strokeStyle = '#c07a50'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(1, bodyY - 13, 4, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // Name label
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Alissa', 0, bodyY - 45);
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = p.life / p.maxLife;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawPopups() {
+  for (const p of popups) {
+    ctx.globalAlpha = Math.min(p.life, 1);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#000';
+    ctx.fillText(p.text, p.x + 1, p.y + 1);
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.text, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHUD() {
+  // Score bar background
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath(); roundRect(8, 8, 200, 36, 10); ctx.fill();
+
+  // Score bar fill
+  const scoreW = Math.max(0, 188 * (score / 100));
+  const scoreColor = score > 60 ? '#4ade80' : score > 30 ? '#fbbf24' : '#ef4444';
+  ctx.fillStyle = scoreColor;
+  ctx.beginPath(); roundRect(14, 20, scoreW, 12, 6); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); roundRect(14, 20, 188, 12, 6); ctx.stroke();
+
+  // Score text
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`❤️ ${score}`, 16, 17);
+
+  // Timer
+  const mins = Math.floor(timeLeft / 60);
+  const secs = Math.floor(timeLeft % 60);
+  const timeStr = `${mins}:${secs.toString().padStart(2,'0')}`;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath(); roundRect(W/2 - 45, 8, 90, 30, 10); ctx.fill();
+  ctx.fillStyle = timeLeft < 30 ? '#fca5a5' : '#fff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⏱ ' + timeStr, W/2, 29);
+
+  // Level
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath(); roundRect(W - 90, 8, 82, 30, 10); ctx.fill();
+  ctx.fillStyle = '#fde68a';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Level ${level}`, W - 49, 28);
+
+  // Cat count indicator
+  const aliveCats = cats.filter(c => c.state !== 'held');
+  let catIconX = 8;
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'left';
+  for (let i = 0; i < cats.length; i++) {
+    ctx.globalAlpha = cats[i].state === 'sleeping' ? 0.4 : 1;
+    ctx.fillText('🐱', catIconX, H - 10);
+    catIconX += 22;
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ── Screens ──
+function drawMenu() {
+  // Background
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#1a0d00');
+  g.addColorStop(1, '#3d1f00');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // Title
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fde68a';
+  ctx.font = 'bold 52px sans-serif';
+  ctx.fillText('🐱 Katzen Chaos', W/2, 120);
+  ctx.font = '22px sans-serif';
+  ctx.fillStyle = '#fcd34d';
+  ctx.fillText('Hilf Alissa, die Katzen zu bändigen!', W/2, 165);
+
+  // Instructions
+  const info = [
+    ['🎮', 'Pfeiltasten / Touch-Buttons'],
+    ['⬇', 'Katze aufheben / in Körb. ablegen'],
+    ['⬆', 'Springen (Regal / Baum)'],
+    ['⏱', '3 Minuten pro Level'],
+    ['💩🏺😾🐭', 'Unheil vermeiden!'],
+  ];
+  ctx.font = '16px sans-serif';
+  ctx.fillStyle = '#fff';
+  let iy = 210;
+  for (const [icon, text] of info) {
+    ctx.textAlign = 'right';
+    ctx.fillText(icon, W/2 - 10, iy);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText(text, W/2 + 4, iy);
+    ctx.fillStyle = '#fff';
+    iy += 28;
+  }
+
+  // Start button
+  const pulse = 0.9 + 0.1 * Math.sin(Date.now() * 0.003);
+  ctx.save();
+  ctx.translate(W/2, 375);
+  ctx.scale(pulse, pulse);
+  ctx.fillStyle = '#16a34a';
+  ctx.beginPath(); roundRect(-80, -22, 160, 44, 22); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('▶ SPIELEN', 0, 7);
+  ctx.restore();
+
+  // Click / tap to start
+  canvas.onclick = () => { if(screen===SCREENS.MENU){ score=100; startLevel(); canvas.onclick=null; } };
+}
+
+function drawLevelWin() {
+  ctx.fillStyle = 'rgba(0,30,10,0.88)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#4ade80';
+  ctx.font = 'bold 48px sans-serif';
+  ctx.fillText('🎉 Level ' + (level - 1) + ' geschafft!', W/2, H/2 - 60);
+  ctx.font = '24px sans-serif';
+  ctx.fillStyle = '#fde68a';
+  ctx.fillText('Alissa macht eine Pause... ☕', W/2, H/2 - 10);
+  ctx.fillStyle = '#86efac';
+  ctx.font = '18px sans-serif';
+  ctx.fillText(`Level ${level}: ${level} Katze${level > 1 ? 'n' : ''} warten schon!`, W/2, H/2 + 28);
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('Leertaste / Tippen → weiter', W/2, H/2 + 80);
+  canvas.onclick = () => { if(screen===SCREENS.LEVEL_WIN){ score=Math.min(score+20,100); startLevel(); canvas.onclick=null; } };
+}
+
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(40,0,0,0.9)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#f87171';
+  ctx.font = 'bold 48px sans-serif';
+  ctx.fillText('😿 Chaos gewonnen!', W/2, H/2 - 60);
+  ctx.font = '22px sans-serif';
+  ctx.fillStyle = '#fcd34d';
+  ctx.fillText('Alissa braucht eine lange Auszeit...', W/2, H/2 - 10);
+  ctx.fillStyle = '#fca5a5';
+  ctx.font = '18px sans-serif';
+  ctx.fillText(`Du hast Level ${level} erreicht`, W/2, H/2 + 30);
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('Leertaste / Tippen → nochmal', W/2, H/2 + 80);
+  canvas.onclick = () => { if(screen===SCREENS.GAME_OVER){ level=1; score=100; startLevel(); canvas.onclick=null; } };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function roundRect(x, y, w, h, r) {
+  if (typeof r === 'number') r = [r, r, r, r];
+  ctx.beginPath();
+  ctx.moveTo(x + r[0], y);
+  ctx.lineTo(x + w - r[1], y);
+  ctx.arcTo(x + w, y, x + w, y + r[1], r[1]);
+  ctx.lineTo(x + w, y + h - r[2]);
+  ctx.arcTo(x + w, y + h, x + w - r[2], y + h, r[2]);
+  ctx.lineTo(x + r[3], y + h);
+  ctx.arcTo(x, y + h, x, y + h - r[3], r[3]);
+  ctx.lineTo(x, y + r[0]);
+  ctx.arcTo(x, y, x + r[0], y, r[0]);
+  ctx.closePath();
+}
+
+function darkenColor(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.floor(r*0.6)},${Math.floor(g*0.6)},${Math.floor(b*0.6)})`;
+}
+
+// ─── Audio ───────────────────────────────────────────────────────────────────
+let AC = null, musicTimeout = null, audioStarted = false;
+
+function ensureAudio() {
+  if (audioStarted) return;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    audioStarted = true;
+    playBgMusic();
+  } catch(e) {}
+}
+['click','keydown','touchstart'].forEach(ev =>
+  document.addEventListener(ev, ensureAudio, {once:true})
+);
+
+// ── Melody (bouncy "cat-chase" tune at 130 BPM) ──
+const _BPM = 130, _B = 60 / _BPM;
+const _F = { C3:131,D3:147,E3:165,F3:175,G3:196,A3:220,B3:247,
+             C4:262,D4:294,E4:330,F4:349,G4:392,A4:440,B4:494,
+             C5:523,D5:587,E5:659,F5:698,G5:784, __:0 };
+const MELODY = [
+  [_F.E4,0.5],[_F.G4,0.25],[_F.E4,0.25],[_F.C4,0.5],[_F.D4,0.5],
+  [_F.E4,0.75],[_F.D4,0.25],[_F.__,1.0],
+  [_F.F4,0.5],[_F.A4,0.25],[_F.F4,0.25],[_F.D4,0.5],[_F.E4,0.5],
+  [_F.F4,0.75],[_F.E4,0.25],[_F.__,1.0],
+  [_F.G4,0.5],[_F.B4,0.25],[_F.G4,0.25],[_F.E4,0.5],[_F.F4,0.5],
+  [_F.A4,0.5],[_F.G4,0.5],[_F.__,1.0],
+  [_F.C5,0.5],[_F.B4,0.25],[_F.A4,0.25],[_F.G4,0.5],[_F.F4,0.25],[_F.E4,0.25],
+  [_F.D4,0.5],[_F.C4,0.5],[_F.__,1.0],
+];
+const BASS = [
+  [_F.C3,2],[_F.G3,2],
+  [_F.F3,2],[_F.C3,2],
+  [_F.G3,2],[_F.D3,2],
+  [_F.C3,2],[_F.__,2],
+];
+
+function _schedNote(freq, start, dur, type, vol) {
+  if (!AC || freq === 0) return;
+  const osc = AC.createOscillator(), g = AC.createGain();
+  osc.connect(g); g.connect(AC.destination);
+  osc.type = type; osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(vol, start + 0.015);
+  g.gain.linearRampToValueAtTime(vol * 0.6, start + dur * 0.75);
+  g.gain.linearRampToValueAtTime(0, start + dur);
+  osc.start(start); osc.stop(start + dur + 0.04);
+}
+
+function playBgMusic() {
+  if (!AC || screen === SCREENS.GAME_OVER) return;
+  const t0 = AC.currentTime + 0.05;
+  let t = t0;
+  for (const [f, b] of MELODY) { _schedNote(f, t, b*_B*0.82, 'square', 0.055); t += b*_B; }
+  t = t0;
+  for (const [f, b] of BASS)   { _schedNote(f, t, b*_B*0.88, 'triangle', 0.05); t += b*_B; }
+  const totalMs = MELODY.reduce((s,[,b]) => s+b, 0) * _B * 1000;
+  musicTimeout = setTimeout(playBgMusic, totalMs - 80);
+}
+
+function sndMeow() {
+  if (!AC) return;
+  const osc = AC.createOscillator(), g = AC.createGain();
+  osc.connect(g); g.connect(AC.destination);
+  osc.type = 'sawtooth';
+  const t = AC.currentTime;
+  const base = 480 + Math.random() * 180;
+  osc.frequency.setValueAtTime(base, t);
+  osc.frequency.linearRampToValueAtTime(base * 1.9, t + 0.09);
+  osc.frequency.linearRampToValueAtTime(base * 0.7, t + 0.38);
+  g.gain.setValueAtTime(0.11, t);
+  g.gain.linearRampToValueAtTime(0.07, t + 0.22);
+  g.gain.linearRampToValueAtTime(0, t + 0.38);
+  osc.start(t); osc.stop(t + 0.42);
+}
+
+function sndPickup() {
+  if (!AC) return;
+  [330, 440, 550].forEach((f, i) => _schedNote(f, AC.currentTime + i*0.06, 0.08, 'sine', 0.13));
+}
+
+function sndDeposit() {
+  if (!AC) return;
+  const t = AC.currentTime;
+  const osc = AC.createOscillator(), g = AC.createGain();
+  osc.connect(g); g.connect(AC.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(220, t);
+  osc.frequency.exponentialRampToValueAtTime(110, t + 0.14);
+  g.gain.setValueAtTime(0.18, t); g.gain.linearRampToValueAtTime(0, t + 0.14);
+  osc.start(t); osc.stop(t + 0.18);
+  [523, 659, 784, 1047].forEach((f, i) => _schedNote(f, t + 0.08 + i*0.07, 0.1, 'sine', 0.09));
+}
+
+function sndTrouble() {
+  if (!AC) return;
+  const t = AC.currentTime;
+  const osc = AC.createOscillator(), g = AC.createGain();
+  osc.connect(g); g.connect(AC.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(380, t);
+  osc.frequency.linearRampToValueAtTime(180, t + 0.18);
+  osc.frequency.linearRampToValueAtTime(280, t + 0.32);
+  osc.frequency.linearRampToValueAtTime(140, t + 0.55);
+  g.gain.setValueAtTime(0.14, t); g.gain.linearRampToValueAtTime(0, t + 0.58);
+  osc.start(t); osc.stop(t + 0.62);
+}
+
+function sndLevelUp() {
+  if (!AC) return;
+  [392, 523, 659, 784, 1047].forEach((f, i) => {
+    _schedNote(f, AC.currentTime + i*0.1, 0.18, 'square', 0.1);
+    _schedNote(f*0.75, AC.currentTime + i*0.1, 0.18, 'triangle', 0.06);
+  });
+}
+
+function sndGameOver() {
+  if (!AC) return;
+  [523, 440, 349, 262, 196].forEach((f, i) =>
+    _schedNote(f, AC.currentTime + i*0.2, 0.28, 'sawtooth', 0.09)
+  );
+}
+
+// ─── PWA service worker ───────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+initGame();
+requestAnimationFrame(update);
+</script>
+</body>
+</html>
