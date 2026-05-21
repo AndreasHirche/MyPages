@@ -1,4 +1,4 @@
-const CACHE = 'mypublicpages-v6';
+const CACHE = 'mypublicpages-v7';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./','./index.html'])));
   self.skipWaiting();
