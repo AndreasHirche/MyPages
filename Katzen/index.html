@@ -39,6 +39,14 @@ canvas{display:block;max-width:100%;max-height:100%}
   transform:translate(-50%,-50%);pointer-events:none;
   box-shadow:0 2px 6px rgba(0,0,0,0.5);
 }
+.joy-arrow{
+  position:absolute;font-size:0.7rem;color:rgba(255,255,255,0.4);
+  pointer-events:none;line-height:1;user-select:none;
+}
+.joy-left {left:5px;top:50%;transform:translateY(-50%)}
+.joy-right{right:5px;top:50%;transform:translateY(-50%)}
+.joy-up   {top:5px;left:50%;transform:translateX(-50%)}
+.joy-down {bottom:5px;left:50%;transform:translateX(-50%)}
 @media(orientation:landscape) and (pointer:coarse){
   .joy-base{width:clamp(70px,18vw,88px);height:clamp(70px,18vw,88px)}
   .joy-knob{width:32px;height:32px}
@@ -69,8 +77,16 @@ canvas{display:block;max-width:100%;max-height:100%}
 <div id="wrap"><canvas id="c"></canvas></div>
 
 <div id="dpad">
-  <div class="joy-base" id="joyL"><div class="joy-knob" id="joyLKnob"></div></div>
-  <div class="joy-base" id="joyR"><div class="joy-knob" id="joyRKnob"></div></div>
+  <div class="joy-base" id="joyL">
+    <div class="joy-knob" id="joyLKnob"></div>
+    <span class="joy-arrow joy-left">◀</span>
+    <span class="joy-arrow joy-right">▶</span>
+  </div>
+  <div class="joy-base" id="joyR">
+    <div class="joy-knob" id="joyRKnob"></div>
+    <span class="joy-arrow joy-up">▲</span>
+    <span class="joy-arrow joy-down">▼</span>
+  </div>
 </div>
 
 <script>
@@ -277,16 +293,20 @@ if (isTouchDevice()) dpad.style.display = 'flex';
 window.addEventListener('resize', () => { if(isTouchDevice()) dpad.style.display='flex'; });
 window.addEventListener('orientationchange', () => { if(isTouchDevice()) dpad.style.display='flex'; });
 
-function makeJoystick(baseId, knobId, onMove) {
+function makeJoystick(baseId, knobId, axis, onMove) {
   const base = document.getElementById(baseId);
   const knob = document.getElementById(knobId);
   let activeId = null, bx = 0, by = 0, br = 45;
   function move(cx, cy) {
-    const dx = cx - bx, dy = cy - by;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const r = Math.min(dist, br * 0.55), a = Math.atan2(dy, dx);
-    knob.style.transform = `translate(calc(-50% + ${Math.cos(a)*r}px),calc(-50% + ${Math.sin(a)*r}px))`;
-    onMove(dx, dy, dist);
+    const rawDx = cx - bx, rawDy = cy - by;
+    const dx = axis === 'x' ? rawDx : 0;
+    const dy = axis === 'y' ? rawDy : 0;
+    const dist = axis === 'x' ? Math.abs(dx) : Math.abs(dy);
+    const travel = Math.min(dist, br * 0.55);
+    const kx = axis === 'x' ? Math.sign(dx) * travel : 0;
+    const ky = axis === 'y' ? Math.sign(dy) * travel : 0;
+    knob.style.transform = `translate(calc(-50% + ${kx}px),calc(-50% + ${ky}px))`;
+    onMove(rawDx, rawDy, dist);
   }
   function reset() {
     knob.style.transform = 'translate(-50%,-50%)';
@@ -321,16 +341,16 @@ function makeJoystick(baseId, knobId, onMove) {
   window.addEventListener('mouseup',   () => { if (md) { md = false; reset(); } });
 }
 
-// Left joystick → left/right movement
-makeJoystick('joyL', 'joyLKnob', (dx, dy, dist) => {
+// Left joystick (horizontal only) → left/right movement
+makeJoystick('joyL', 'joyLKnob', 'x', (dx, dy, dist) => {
   const thr = 18;
   keys['ArrowLeft']  = dx < -thr;
   keys['ArrowRight'] = dx >  thr;
 });
 
-// Right joystick → jump (up, one-shot) / pickup-drop (down, one-shot) / menu action (any flick)
+// Right joystick (vertical only) → jump (up, one-shot) / pickup-drop (down, one-shot)
 let _rUpArmed = true, _rDownArmed = true;
-makeJoystick('joyR', 'joyRKnob', (dx, dy, dist) => {
+makeJoystick('joyR', 'joyRKnob', 'y', (dx, dy, dist) => {
   const thr = 22;
   const up   = dy < -thr;
   const down = dy >  thr;
