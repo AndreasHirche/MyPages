@@ -1,5 +1,5 @@
-const CACHE = 'katzen-chaos-v1';
-const FILES = ['./index.html', './manifest.json'];
+const CACHE = 'katzen-chaos-v2';
+const FILES = ['./index.html', './manifest.json', './sw.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));

@@ -50,7 +50,8 @@ canvas{display:block;max-width:100%;max-height:100%}
 @media(orientation:landscape) and (pointer:coarse){
   .joy-base{width:clamp(70px,18vw,88px);height:clamp(70px,18vw,88px)}
   .joy-knob{width:32px;height:32px}
-  #dpad{padding:4px 14px 6px}
+  /* side-mounted: joysticks float left/right, full viewport height */
+  #dpad{top:0;flex-direction:row;align-items:center;padding:0 6px}
 }
 #rotateMsg{
   display:none;
@@ -100,11 +101,11 @@ function resize() {
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const isLandscape = vw > vh;
   const isTouch = isTouchDevice();
-  // In landscape on touch, bottom joysticks take ~100px
-  const availH = (isLandscape && isTouch) ? vh - 100 : vh;
-  const scaleX = vw / W;
-  const scaleY = availH / H;
-  const scale = Math.min(scaleX, scaleY);
+  // Landscape: joysticks on sides (~100px each) → subtract from width, use full height
+  // Portrait:  joysticks at bottom (~104px)     → use full width, subtract from height
+  const availW = isLandscape && isTouch ? vw - 200 : vw;
+  const availH = !isLandscape && isTouch ? vh - 104 : vh;
+  const scale = Math.min(availW / W, availH / H);
   canvas.width = W; canvas.height = H;
   canvas.style.width  = Math.floor(W * scale) + 'px';
   canvas.style.height = Math.floor(H * scale) + 'px';
