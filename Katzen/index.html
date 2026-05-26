@@ -28,21 +28,22 @@ canvas{display:block;max-width:100%;max-height:100%}
 .cbtn{
   width:58px;height:58px;
   border-radius:50%;
-  border:none;
+  border:2px solid rgba(255,255,255,0.3);
   font-size:1.5rem;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.18);
-  backdrop-filter:blur(4px);
-  -webkit-backdrop-filter:blur(4px);
-  border:2px solid rgba(255,255,255,0.3);
+  background:rgba(60,40,20,0.82);
   color:#fff;
   cursor:pointer;
   user-select:none;
   -webkit-tap-highlight-color:transparent;
   transition:background .1s;
-  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
 }
-.cbtn:active,.cbtn.pressed{background:rgba(255,255,255,0.38)}
+.cbtn:active,.cbtn.pressed{background:rgba(120,80,40,0.95)}
+@media(orientation:landscape) and (pointer:coarse){
+  .cbtn{width:46px;height:46px;font-size:1.2rem}
+  #dpad{padding:4px 14px 6px}
+}
 #rotateMsg{
   display:none;
   position:fixed;inset:0;
@@ -85,8 +86,14 @@ const ctx = canvas.getContext('2d');
 const W = 800, H = 450;
 
 function resize() {
-  const scaleX = window.innerWidth / W;
-  const scaleY = window.innerHeight / H;
+  const vw = window.visualViewport ? window.visualViewport.width  : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const isLandscape = vw > vh;
+  const isTouch = isTouchDevice();
+  // In landscape on touch, bottom d-pad takes ~64px
+  const availH = (isLandscape && isTouch) ? vh - 64 : vh;
+  const scaleX = vw / W;
+  const scaleY = availH / H;
   const scale = Math.min(scaleX, scaleY);
   canvas.width = W; canvas.height = H;
   canvas.style.width  = Math.floor(W * scale) + 'px';
@@ -94,6 +101,8 @@ function resize() {
 }
 resize();
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => { setTimeout(resize, 250); });
+if (window.visualViewport) { window.visualViewport.addEventListener('resize', resize); }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const FLOOR_Y    = 388;
@@ -263,9 +272,10 @@ function depositCat(cat) {
 
 // ─── Touch controls ───────────────────────────────────────────────────────────
 const dpad = document.getElementById('dpad');
-function isTouchDevice() { return window.matchMedia('(pointer:coarse)').matches; }
+function isTouchDevice() { return window.matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window); }
 if (isTouchDevice()) dpad.style.display = 'flex';
 window.addEventListener('resize', () => { if(isTouchDevice()) dpad.style.display='flex'; });
+window.addEventListener('orientationchange', () => { if(isTouchDevice()) dpad.style.display='flex'; });
 
 function addBtn(id, code, action) {
   const btn = document.getElementById(id);
