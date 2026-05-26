@@ -24,24 +24,24 @@ canvas{display:block;max-width:100%;max-height:100%}
   pointer-events:none;
   z-index:10;
 }
-.ctrl-group{display:flex;gap:6px;pointer-events:all}
-.cbtn{
-  width:58px;height:58px;
-  border-radius:50%;
-  border:2px solid rgba(255,255,255,0.3);
-  font-size:1.5rem;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(60,40,20,0.82);
-  color:#fff;
-  cursor:pointer;
-  user-select:none;
-  -webkit-tap-highlight-color:transparent;
-  transition:background .1s;
-  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+.joy-base{
+  width:clamp(80px,22vw,100px);height:clamp(80px,22vw,100px);
+  background:rgba(60,40,20,0.72);
+  border:2px solid rgba(255,255,255,0.22);
+  border-radius:50%;position:relative;touch-action:none;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(0,0,0,0.5);pointer-events:all;
 }
-.cbtn:active,.cbtn.pressed{background:rgba(120,80,40,0.95)}
+.joy-knob{
+  width:38px;height:38px;
+  background:rgba(190,130,60,0.95);
+  border:2px solid rgba(255,255,255,0.45);
+  border-radius:50%;position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);pointer-events:none;
+  box-shadow:0 2px 6px rgba(0,0,0,0.5);
+}
 @media(orientation:landscape) and (pointer:coarse){
-  .cbtn{width:46px;height:46px;font-size:1.2rem}
+  .joy-base{width:clamp(70px,18vw,88px);height:clamp(70px,18vw,88px)}
+  .joy-knob{width:32px;height:32px}
   #dpad{padding:4px 14px 6px}
 }
 #rotateMsg{
@@ -69,14 +69,8 @@ canvas{display:block;max-width:100%;max-height:100%}
 <div id="wrap"><canvas id="c"></canvas></div>
 
 <div id="dpad">
-  <div class="ctrl-group">
-    <button class="cbtn" id="btnL">◀</button>
-    <button class="cbtn" id="btnR">▶</button>
-  </div>
-  <div class="ctrl-group" style="flex-direction:column;align-items:center;gap:6px">
-    <button class="cbtn" id="btnU">▲</button>
-    <button class="cbtn" id="btnD">▼</button>
-  </div>
+  <div class="joy-base" id="joyL"><div class="joy-knob" id="joyLKnob"></div></div>
+  <div class="joy-base" id="joyR"><div class="joy-knob" id="joyRKnob"></div></div>
 </div>
 
 <script>
@@ -90,8 +84,8 @@ function resize() {
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const isLandscape = vw > vh;
   const isTouch = isTouchDevice();
-  // In landscape on touch, bottom d-pad takes ~64px
-  const availH = (isLandscape && isTouch) ? vh - 64 : vh;
+  // In landscape on touch, bottom joysticks take ~100px
+  const availH = (isLandscape && isTouch) ? vh - 100 : vh;
   const scaleX = vw / W;
   const scaleY = availH / H;
   const scale = Math.min(scaleX, scaleY);
@@ -130,6 +124,7 @@ const SPOTS = [
   { id:'vase',    label:'🏺 Vase!',      x:622, y:SHELF_Y,  high:true,  warnTime:2.0, dmg:25 },
   { id:'scratch', label:'🛋 Gekratzt!',  x:420, y:FLOOR_Y,  high:false, warnTime:2.2, dmg:15 },
   { id:'mouse',   label:'🐭 Maus!',      x:762, y:FLOOR_Y,  high:false, warnTime:1.6, dmg:20 },
+  { id:'branch',  label:'🌿 Baum kratzt!', x:72, y:BRANCH_Y, high:true, warnTime:2.6, dmg:18 },
 ];
 
 const CAT_COLORS = ['#e07b39','#9b6b9e','#4a9e6b','#e04f4f','#3a7bc8','#c49a1e'];
@@ -282,20 +277,75 @@ if (isTouchDevice()) dpad.style.display = 'flex';
 window.addEventListener('resize', () => { if(isTouchDevice()) dpad.style.display='flex'; });
 window.addEventListener('orientationchange', () => { if(isTouchDevice()) dpad.style.display='flex'; });
 
-function addBtn(id, code, action) {
-  const btn = document.getElementById(id);
-  const press   = e => { e.preventDefault(); keys[code] = true;  btn.classList.add('pressed'); if(action) action(); };
-  const release = e => { e.preventDefault(); keys[code] = false; btn.classList.remove('pressed'); };
-  btn.addEventListener('touchstart',  press,   {passive:false});
-  btn.addEventListener('touchend',    release, {passive:false});
-  btn.addEventListener('touchcancel', release, {passive:false});
-  btn.addEventListener('mousedown',   press);
-  btn.addEventListener('mouseup',     release);
+function makeJoystick(baseId, knobId, onMove) {
+  const base = document.getElementById(baseId);
+  const knob = document.getElementById(knobId);
+  let activeId = null, bx = 0, by = 0, br = 45;
+  function move(cx, cy) {
+    const dx = cx - bx, dy = cy - by;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const r = Math.min(dist, br * 0.55), a = Math.atan2(dy, dx);
+    knob.style.transform = `translate(calc(-50% + ${Math.cos(a)*r}px),calc(-50% + ${Math.sin(a)*r}px))`;
+    onMove(dx, dy, dist);
+  }
+  function reset() {
+    knob.style.transform = 'translate(-50%,-50%)';
+    onMove(0, 0, 0);
+    activeId = null;
+  }
+  base.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0]; activeId = t.identifier;
+    const rect = base.getBoundingClientRect();
+    bx = rect.left + rect.width/2; by = rect.top + rect.height/2; br = rect.width/2;
+    move(t.clientX, t.clientY);
+  }, {passive:false});
+  base.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === activeId) { move(t.clientX, t.clientY); break; }
+  }, {passive:false});
+  base.addEventListener('touchend', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === activeId) { reset(); break; }
+  }, {passive:false});
+  base.addEventListener('touchcancel', () => reset(), {passive:true});
+  // Mouse fallback for desktop testing
+  let md = false;
+  base.addEventListener('mousedown', e => {
+    md = true;
+    const rect = base.getBoundingClientRect();
+    bx = rect.left + rect.width/2; by = rect.top + rect.height/2; br = rect.width/2;
+    move(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', e => { if (md) move(e.clientX, e.clientY); });
+  window.addEventListener('mouseup',   () => { if (md) { md = false; reset(); } });
 }
-addBtn('btnL', 'ArrowLeft');
-addBtn('btnR', 'ArrowRight');
-addBtn('btnU', 'ArrowUp',   () => { if(screen===SCREENS.PLAY) tryJump(); });
-addBtn('btnD', 'ArrowDown', () => { if(screen===SCREENS.PLAY) tryPickupOrDrop(); });
+
+// Left joystick → left/right movement
+makeJoystick('joyL', 'joyLKnob', (dx, dy, dist) => {
+  const thr = 18;
+  keys['ArrowLeft']  = dx < -thr;
+  keys['ArrowRight'] = dx >  thr;
+});
+
+// Right joystick → jump (up, one-shot) / pickup-drop (down, one-shot) / menu action (any flick)
+let _rUpArmed = true, _rDownArmed = true;
+makeJoystick('joyR', 'joyRKnob', (dx, dy, dist) => {
+  const thr = 22;
+  const up   = dy < -thr;
+  const down = dy >  thr;
+  const any  = dist > thr;
+
+  if (!up)   _rUpArmed   = true;
+  if (!down) _rDownArmed = true;
+
+  if (screen !== SCREENS.PLAY) {
+    if (any) { ensureAudio(); handleAction(); }
+    return;
+  }
+  if (up   && _rUpArmed)   { _rUpArmed   = false; tryJump(); }
+  if (down && _rDownArmed) { _rDownArmed = false; tryPickupOrDrop(); }
+});
 
 // ─── Particles & Popups ───────────────────────────────────────────────────────
 function spawnParticles(x, y, color, n) {
@@ -463,9 +513,9 @@ function chooseTrouble(cat) {
     cat.sleepTimer = 1.5 + Math.random();
     return;
   }
-  // In early levels, avoid high spots for first few cats
+  // In early levels, avoid high spots only in level 1
   let pool = available;
-  if (level < 3) pool = available.filter(s => !s.high);
+  if (level < 2) pool = available.filter(s => !s.high);
   if (!pool.length) pool = available;
 
   const spot = pool[Math.floor(Math.random() * pool.length)];
